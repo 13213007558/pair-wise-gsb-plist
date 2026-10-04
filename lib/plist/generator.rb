@@ -43,7 +43,13 @@ module Plist
     #
     # The +envelope+ parameters dictates whether or not the resultant plist fragment is wrapped in the normal XML/plist header and footer.  Set it to false if you only want the fragment.
     def self.dump(obj, envelope = true, options = {})
-      options = { :indent => DEFAULT_INDENT }.merge(options)
+      options = { :indent => DEFAULT_INDENT, :format => :xml }.merge(options)
+
+      return dump_binary(obj, options) if options[:format] == :binary
+
+      unless options[:format] == :xml
+        raise ArgumentError, "unsupported plist format: #{options[:format].inspect}"
+      end
 
       output = PlistBuilder.new(options[:indent]).build(obj)
       output = wrap(output) if envelope
@@ -51,11 +57,19 @@ module Plist
       output
     end
 
+    def self.dump_binary(obj, options = {})
+      Plist::BinaryWriter.new(options).dump(obj)
+    end
+
     # Writes the serialized object's plist to the specified filename.
     def self.save_plist(obj, filename, options = {})
       File.open(filename, 'wb') do |f|
         f.write(obj.to_plist(true, options))
       end
+    end
+
+    def self.save_binary(obj, filename, options = {})
+      File.binwrite(filename, dump_binary(obj, options))
     end
 
     private

@@ -7,6 +7,10 @@ Plist is a library to manipulate Property List files, also known as plists.  It 
 
 == Usage
 
+Plist supports both XML and Apple binary plists. XML remains the default;
+binary plists are only used when requested explicitly. The binary reader does
+not shell out to macOS tools such as +plutil+.
+
 === Security considerations
 
 By default, Plist.parse_xml uses Marshal.load for <data/> attributes. If the <data/> attribute contains malicious data, an attacker can gain code execution.
@@ -29,6 +33,30 @@ To disable the Marshal.load behavior, use <tt>marshal: false</tt>. This will ret
 
   result['ZipPostal']
   => "12345"
+
+==== Binary plists
+
+Use +Plist.parse_binary+ or pass the explicit format to +Plist.parse+:
+
+  result = Plist.parse_binary('example.bplist')
+  result = Plist.parse(data, format: :binary)
+
+Binary +data+ values are returned as +StringIO+ objects by default. Use
+<tt>marshal: true</tt> to restore the old Marshal behavior for data blobs.
+
+Shared object references are preserved by default, so an array or dictionary
+referenced from two places is decoded once and returned as the same Ruby object.
+Cyclic references raise +Plist::CyclicReferenceError+ by default. Pass
+<tt>on_cycle: :reference</tt> to return a +Plist::Reference+ containing the
+object-table index instead. Pass <tt>preserve_shared_references: false</tt> to
+copy acyclic shared objects.
+
+Binary UID values are returned as the distinct +Plist::UID+ type, never as
+plain integers.
+
+For untrusted input, configure the reader limits:
+
+  Plist.parse_binary(data, max_objects: 10_000, max_object_length: 1024 * 1024)
 
 ==== Example Property List
 
@@ -73,6 +101,7 @@ plist also provides the ability to generate plists from Ruby objects.  The follo
 * +Array+ and +Hash+ are both recursive; their elements will be converted into plist nodes inside the <array> and <dict> containers (respectively).
 * +IO+ (and its descendants) and +StringIO+ objects are read from and their contents placed in a <data> element.
 * User classes may implement +to_plist_node+ to dictate how they should be serialized; otherwise the object will be passed to <tt>Marshal.dump</tt> and the result placed in a <data> element.  See below for more details.
+* Binary generation additionally supports +Plist::UID+ and preserves shared Array, Hash, String, IO, and StringIO object references.
 
 ==== Creating a plist
 
@@ -98,6 +127,14 @@ This is equivalent to calling <tt>Plist::Emit.dump(obj)</tt>.  Either one will y
       </dict>
   </array>
   </plist>
+
+For binary output, select it explicitly:
+
+  binary = obj.to_plist(true, format: :binary)
+  binary = Plist.dump_binary(obj)
+
+Cyclic source objects are rejected by default. Pass <tt>on_cycle: :reference</tt>
+to encode a back reference to the object already present in the object table.
 
 You can also dump plist fragments by passing +false+ as the second parameter:
 
@@ -186,4 +223,3 @@ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
 LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
