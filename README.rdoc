@@ -30,6 +30,20 @@ To disable the Marshal.load behavior, use <tt>marshal: false</tt>. This will ret
   result['ZipPostal']
   => "12345"
 
+=== Decoding NSKeyedArchiver plists
+
+When a parsed plist contains +$archiver+, +$objects+, and +$top+, use
++Plist.decode_keyed_archive+ to resolve +CF$UID+ references. Shared arrays and
+hashes retain Ruby object identity, so cycles and repeated references are safe.
+Unsupported classes are returned as lazy nodes and are never instantiated by
+class name or passed to +Marshal+.
+
+  parsed = Plist.parse_xml('path/to/keyed-archive.plist', marshal: false)
+  archive = Plist.decode_keyed_archive(parsed)
+  archive.root
+  archive.objects[7]
+  archive.errors[7]
+
 ==== Example Property List
 
   <?xml version="1.0" encoding="UTF-8"?>
@@ -186,4 +200,3 @@ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
 LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
