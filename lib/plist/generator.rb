@@ -43,6 +43,9 @@ module Plist
     #
     # The +envelope+ parameters dictates whether or not the resultant plist fragment is wrapped in the normal XML/plist header and footer.  Set it to false if you only want the fragment.
     def self.dump(obj, envelope = true, options = {})
+      format = options.fetch(:format, :xml)
+      return Binary.dump(obj, options.reject { |key, _| key == :format }) if format == :binary || format == :bplist
+
       options = { :indent => DEFAULT_INDENT }.merge(options)
 
       output = PlistBuilder.new(options[:indent]).build(obj)

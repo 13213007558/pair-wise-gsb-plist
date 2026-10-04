@@ -39,6 +39,10 @@ module Plist
     listener.result
   end
 
+  def self.parse_binary(filename_or_binary, options = {})
+    Binary.parse(filename_or_binary, options)
+  end
+
   class Listener
     # include REXML::StreamListener
 

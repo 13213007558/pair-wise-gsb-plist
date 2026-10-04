@@ -17,6 +17,24 @@ To disable the Marshal.load behavior, use <tt>marshal: false</tt>. This will ret
 
 === Parsing
 
+Binary plists are parsed only when requested explicitly:
+
+  result = Plist.parse(binary, format: :binary)
+  # or
+  result = Plist.parse_binary(binary)
+
+Binary +data+ values are returned as +StringIO+ objects and are never passed to +Marshal.load+ unless <tt>marshal: true</tt> is provided. Binary +uid+ values are returned as +Plist::UID+ objects rather than integers.
+
+By default, repeated object references are materialized as separate Ruby objects. Pass <tt>shared: true</tt> to preserve the identity relationship in arrays and dictionaries:
+
+  result = Plist.parse(binary, format: :binary, shared: true)
+
+Cycles are rejected with +Plist::CyclicReferenceError+ by default. A cyclic edge can instead be returned as +Plist::Reference+ with <tt>cycles: :reference</tt>:
+
+  result = Plist.parse(binary, format: :binary, shared: true, cycles: :reference)
+
+Untrusted inputs can be bounded with <tt>max_length</tt>, <tt>max_objects</tt>, <tt>max_data_length</tt>, and <tt>max_string_length</tt>.
+
   result = Plist.parse_xml('path/to/example.plist')
   # or
   result = Plist.parse_xml('path/to/example.plist', marshal: false)
@@ -104,6 +122,14 @@ You can also dump plist fragments by passing +false+ as the second parameter:
   Plist::Emit.dump('holy cow!', false)
   => "<string>holy cow!</string>"
 
+To write the binary +bplist00+ representation, select the format explicitly:
+
+  binary = Plist.dump(obj, format: :binary)
+  # or
+  binary = Plist::Emit.dump(obj, true, format: :binary)
+
+The binary writer preserves +Array+, +Hash+, +String+, and IO object identity when the same Ruby object appears more than once. +Plist::UID+ values are written as binary UID objects.
+
 ==== Custom serialization
 
 If your class can be safely coerced into a native plist datatype, you can implement +to_plist_node+.  Upon encountering an object of a class it doesn't recognize, the plist library will check to see if it responds to +to_plist_node+, and if so, insert the result of that call into the plist output.
@@ -186,4 +212,3 @@ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
 LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
