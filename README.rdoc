@@ -65,6 +65,33 @@ To disable the Marshal.load behavior, use <tt>marshal: false</tt>. This will ret
   </dict>
   </plist>
 
+=== Decoding NSKeyedArchiver plists
+
+When another parser has already turned a keyed plist into a Ruby Hash containing
++$objects+, +$top+, and +$archiver+, decode its UID graph without +Marshal+:
+
+  decoded = Plist::NSKeyedArchiver.decode(archive)
+  decoded.root
+
+Known NSString, NSNumber, NSData, NSDate, NSArray, and NSDictionary classes
+(including their mutable variants) become ordinary Ruby values. Shared arrays and
+hashes preserve object identity, so cycles remain traversable instead of being
+copied recursively. Class descriptions stay available through
++decoded.class_descriptions+.
+
+Unknown classes are returned lazily as +Plist::NSKeyedArchiver::UnknownObject+.
+The caller can inspect +class_name+, resolve UIDs through +properties+, and
+optionally interpret the node with +decode+:
+
+  node = decoded.root
+  node.decode { |properties| MyValue.new(properties) }
+  node.value
+
+Invalid UIDs, malformed objects, and bad or duplicate class descriptions do not
+abort the whole archive. Their messages are keyed in +decoded.errors+ by the
+offending +$objects+ index (or +$top+ / +$archiver+), while the affected value is
+a +Plist::NSKeyedArchiver::InvalidObject+ carrying its object number and raw data.
+
 === Generation
 
 plist also provides the ability to generate plists from Ruby objects.  The following Ruby classes are converted into native plist types:
@@ -186,4 +213,3 @@ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
 LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-

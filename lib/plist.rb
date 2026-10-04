@@ -13,5 +13,6 @@ require 'cgi'
 require 'stringio'
 
 require_relative 'plist/generator'
+require_relative 'plist/ns_keyed_archiver'
 require_relative 'plist/parser'
 require_relative 'plist/version'
